@@ -1,0 +1,12 @@
+gfortran -c SingPrec.f90
+gfortran -c SysGnuLinux.f90
+gfortran -c NWTC_IO.f90
+gfortran -c NWTC_Num.f90
+gfortran -c NWTC_Aero.f90
+gfortran -c NWTC_Library.f90
+gfortran -c NWTC_SharedDataTypes.f90
+gfortran -c -ffree-line-length-0 WriteTurbSimBinary.f90
+
+gfortran SingPrec.o SysGnuLinux.o NWTC_IO.o NWTC_Num.o NWTC_Aero.o NWTC_Library.o NWTC_SharedDataTypes.o WriteTurbSimBinary.o -o of2fast
+
+
