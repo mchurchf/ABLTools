@@ -505,7 +505,7 @@ def vtk2xy(vtkPath, verbose=True):
 #==============================================================================
 #         
 #==============================================================================
-def vtk2bts(workingPath,t0,dt,nt,verbose=False,exePath=None):        
+def vtk2bts(workingPath,t0,dt,nt,verbose=False,exePath=None,btsPrefix="prefix"):        
     """
     Given several *.vtk files (within individual time directories), generate a turbsim *.bts file.
     
@@ -528,7 +528,7 @@ def vtk2bts(workingPath,t0,dt,nt,verbose=False,exePath=None):
     """
 
     # a tsConv.inp file is necessary
-    write_inp(t0,dt,nt,workingPath=workingPath)
+    write_inp(t0,dt,nt,workingPath=workingPath,btsPrefix=btsPrefix)
     
     # loop over time, convert vtk=>xy at each time
     for time in np.arange(t0,t0+nt*dt,dt):
