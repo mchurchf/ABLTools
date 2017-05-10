@@ -465,7 +465,31 @@ def read_inp(inpPath=None):
 #==============================================================================
 # 
 #==============================================================================
-def vtk2xy(vtkPath, verbose=True):
+def _vtk2xy_manyFiles(vtkPath, t0=None, dt=None, nt=None, verbose=True):
+    """
+    Parameters
+    ----------    
+    vtkPath : str,
+        absolute path to directory where each time subdirectory is (and within each, a vtk structured file)
+        
+    @author: pdoubraw         
+    """
+
+    pathNow = os.path.abspath(os.curdir)
+    os.chdir(vtkPath)
+    times = np.arange(t0,t0+nt*dt,dt)
+
+    for itime,time in enumerate(times):
+        timePath        = os.path.abspath(os.path.join(vtkPath,"{0:.3f}".format(time)))
+        vtkFile         = glob.glob(os.path.join(timePath,'array*U*.vtk'))[0]
+        _vtk2xy_oneFile(vtkFile,verbose=verbose)
+    
+    os.chdir(pathNow)
+    return
+#==============================================================================
+# 
+#==============================================================================
+def _vtk2xy_oneFile(vtkPath, verbose=True):
     """
     Based on a single *.vtk (VTK Structured) file, write out a single *.xy file in the same time directory.
     
@@ -502,6 +526,16 @@ def vtk2xy(vtkPath, verbose=True):
     if verbose:
         print "Converted {0} to {1}".format(vtkPath,oPath)
     return
+#==============================================================================
+# 
+#==============================================================================
+def vtk2xy(vtkPath, t0=None, dt=None, nt=None, verbose=True):
+    extension = os.path.splitext(vtkPath)[-1]
+    if extension==".vtk":
+        _vtk2xy_oneFile(vtkPath, verbose=verbose)
+    else:
+        _vtk2xy_manyFiles(vtkPath, t0=t0, dt=dt, nt=nt, verbose=verbose)
+    return  
 #==============================================================================
 #         
 #==============================================================================
