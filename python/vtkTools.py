@@ -9,14 +9,14 @@ import os, glob, sys
 #==============================================================================
 # 
 #==============================================================================
-def read_vtkStructured(vtkPath,verbose=True):
+def _read_vtkStructured_oneFile(vtkPath,verbose=False):
     """
     Reads in a VTK structured file.
     
     Parameters
     ----------
     vtkPath : str,
-        full path to VTK file
+        full path to VTK file .OR. to a directory full of time sub-directories with vtk files
     verbose : bool,
         whether to print out metadata
 
@@ -24,11 +24,11 @@ def read_vtkStructured(vtkPath,verbose=True):
     -------
     data : list,
         [X,Y,Z,U,V,W] each of which is a 3d array
-    meta : list,
-        [dx,dy,dz,nx,ny,nz]
+    meta : dict,
+        info about the grid
         
     @author: pdoubraw
-    """
+    """    
     f = open(vtkPath)
     lines = f.readlines()
     f.close()
@@ -38,8 +38,8 @@ def read_vtkStructured(vtkPath,verbose=True):
     dx, dy, dz = [ float(x) for x in lines[6].lstrip().split()[1:] ]
     npts = int(lines[7].split(" ")[1])
     
-    x1d = [xo] if dx==0 else np.arange(xo,xo+dx*nx,dx)
-    y1d = [yo] if dy==0 else np.arange(yo,yo+dy*ny,dy)
+    x1d = [xo] if dx==0 else [ xo+i*dx for i in range(int(nx)) ]
+    y1d = [yo] if dy==0 else [ yo+i*dy for i in range(int(ny)) ]
     z1d = np.arange(zo,zo+dz*nz,dz)           
     
     [Y,X,Z] = np.meshgrid(y1d,x1d,z1d)
@@ -70,7 +70,11 @@ def read_vtkStructured(vtkPath,verbose=True):
                 row += 1
 
     data = [X,Y,Z,U,V,W]                
-    meta = [dx,dy,dz,nx,ny,nz]    
+    meta = {}
+    meta['dx'] = dx ; meta['dy'] = dy ; meta['dz'] = dz
+    meta['nx'] = nx ; meta['ny'] = ny ; meta['nz'] = nz
+    meta['xOrigin'] = xo ; meta['yOrigin'] = yo ; meta['zOrigin'] = zo
+    meta['nPts'] = npts
 
     if verbose:            
         print "dx = {0}".format(dx)
@@ -80,13 +84,13 @@ def read_vtkStructured(vtkPath,verbose=True):
         print "ny = {0}".format(ny)
         print "nz = {0}".format(nz)
         
-    return data,meta
+    return data, meta
 #==============================================================================
 # 
 #==============================================================================
-def read_vtkStructuredMany(vtkPath):
-    """c
-    Read in several *.vtl (VTK Structured) files.
+def _read_vtkStructured_manyFiles(vtkPath,verbose=False):
+    """
+    Read in several *.vtk (VTK Structured) files.
     
     Parameters
     ----------    
@@ -99,7 +103,14 @@ def read_vtkStructuredMany(vtkPath):
     nt : int,
         number of times to process
         
-    @author: pdoubraw        
+    Returns
+    -------
+    data : list,
+        [X,Y,Z,U,V,W] each of which is a 3d array
+    meta : dict,
+        info about the grid
+        
+    @author: pdoubraw
     """    
     pathNow = os.path.abspath(os.curdir)
     os.chdir(vtkPath)
@@ -109,8 +120,11 @@ def read_vtkStructuredMany(vtkPath):
 
         timePath        = os.path.abspath(os.path.join(vtkPath,"{0:.3f}".format(time)))
         vtkFile         = glob.glob(os.path.join(timePath,'array*U*.vtk'))[0]
-        data, meta      = read_vtkStructured(vtkFile,verbose=False)
+        data, meta      = _read_vtkStructured_oneFile(vtkFile,verbose=False)
         [X,Y,Z,U,V,W]   = data
+        
+        if verbose:
+            print "Reading in {0}...".format(vtkFile)
     
         if itime==0:
             
@@ -135,8 +149,79 @@ def read_vtkStructuredMany(vtkPath):
         
     os.chdir(pathNow)
 
-    return [x4d,y4d,z4d,u4d,v4d,w4d]
+    return [x4d,y4d,z4d,u4d,v4d,w4d], meta
+#==============================================================================
+# 
+#==============================================================================
+def read_vtkStructured(vtkPath,verbose=False):
+    """
+    Reads in VTK structured data (either one file or a set of files).
 
+    Parameters
+    ----------
+    vtkPath : str,
+        full path to VTK file .OR. to a directory full of time sub-directories with vtk files
+    verbose : bool,
+        whether to print out metadata
+
+    Returns
+    -------
+    data : list,
+        [X,Y,Z,U,V,W] each of which is a 3d array
+    meta : dict,
+        info about the grid
+        
+    @author: pdoubraw    
+    """
+    extension = os.path.splitext(vtkPath)[-1]
+    if extension==".vtk":
+        data, meta = _read_vtkStructured_oneFile(vtkPath=vtkPath,verbose=verbose)
+    else:
+        data, meta = _read_vtkStructured_manyFiles(vtkPath=vtkPath,verbose=verbose)
+    return data, meta
+#==============================================================================
+# 
+#==============================================================================
+def write_vtkStructured(data,meta,fileOutPath,descStr="PLACEHOLDER",verbose=False):
+    """
+    Writes data in vtk structured format.
+    
+    Parameters
+    ----------
+    data : list,
+        [X,Y,Z,U,V,W] each of which is a 3d array
+    meta : dict,
+        info about the grid
+    fileOutPath : str,
+        absolute path to vtk file you want to write      
+    descStr : str,
+        some header string describing what these data are
+    """      
+    f = open("top.txt", 'w')
+    f.write('# vtk DataFile Version 3.0\n')  
+    f.write('{0}\n'.format(descStr))  
+    f.write('ASCII\n')  
+    f.write('DATASET STRUCTURED_POINTS\n')  
+    f.write('DIMENSIONS {0:d} {1:d} {2:d}\n'.format(int(meta['nx']),
+            int(meta['ny']),int(meta['nz'])))  
+    f.write('ORIGIN {0:.1f} {1:.1f} {2:.1f}\n'.format(meta['xOrigin'],meta['yOrigin'],meta['zOrigin']))  
+    f.write('SPACING {0:.1f} {1:.1f} {2:.1f}\n'.format(meta['dx'],meta['dy'],meta['dz']))  
+    f.write('POINT_DATA {0:d}\n'.format(meta['nPts']))  
+    f.write('VECTORS vAmb float\n')  
+    f.close()    
+    
+    [X,Y,Z,U,V,W]   = data    
+    U = np.ravel(U, order='F') ; V = np.ravel(V, order='F') ; W = np.ravel(W, order='F')        
+    data = np.zeros((len(U),3))
+    data[:,0] = U ; data[:,1] = V ; data[:,2] = W     
+    np.savetxt("bot.txt",data)
+    os.system("cat top.txt bot.txt > {0}".format(fileOutPath))
+    os.remove("top.txt")
+    os.remove("bot.txt")    
+
+    if verbose:
+        print "Saved data to {0}".format(fileOutPath)
+    return
 #==============================================================================
 # 
 #==============================================================================
@@ -302,8 +387,7 @@ def write_inp(t0,dt,nt,zref=99.0,xyname="array.1_U.xy",btsPrefix="test",theta=0.
     else:
         sampleVTK   = sampleVTK[0]
 
-    data, meta          = read_vtkStructured(sampleVTK, verbose=False)
-    [dx,dy,dz,nx,ny,nz] = meta
+    data, meta          = _read_vtkStructured_oneFile(sampleVTK, verbose=False)
     [X,Y,Z,U,V,W]       = data
 
     iz      = np.argmin(np.abs(Z[0,0,:]-zref))
@@ -312,9 +396,9 @@ def write_inp(t0,dt,nt,zref=99.0,xyname="array.1_U.xy",btsPrefix="test",theta=0.
     inpName = os.path.join(workingPath,'tsConv.inp')
     f = open(inpName,'w+')
     f.write("{0:.1f}\n".format(theta))
-    for x in [ny,nz]:
+    for x in [meta['ny'],meta['nz']]:
         f.write("{0:d}\n".format(int(x)))
-    for x in [dz,dy,dt]:
+    for x in [meta['dz'],meta['dy'],dt]:
         f.write("{0:.4f}\n".format(x))
     f.write("{0:d}\n".format(int(nt)))
     for x in [uref,zref]:
@@ -322,6 +406,7 @@ def write_inp(t0,dt,nt,zref=99.0,xyname="array.1_U.xy",btsPrefix="test",theta=0.
     for x in [btsPrefix,xyname,t0]:
         f.write("{0}\n".format(x))        
     f.close()
+    return
 #==============================================================================
 # 
 #==============================================================================
@@ -362,8 +447,7 @@ def read_inp(inpPath=None):
         print "Could not find inp file at {0}".format(inpPath)
         sys.exit()
 
-    out = {}
-    print "Opening {0}".format(fPath[0])
+    out = {}    
     f = open(fPath[0])
     lines = f.readlines()
     out['theta'] = float(lines[0])
@@ -381,7 +465,31 @@ def read_inp(inpPath=None):
 #==============================================================================
 # 
 #==============================================================================
-def vtk2xy(vtkPath, verbose=True):
+def _vtk2xy_manyFiles(vtkPath, t0=None, dt=None, nt=None, verbose=True):
+    """
+    Parameters
+    ----------    
+    vtkPath : str,
+        absolute path to directory where each time subdirectory is (and within each, a vtk structured file)
+        
+    @author: pdoubraw         
+    """
+
+    pathNow = os.path.abspath(os.curdir)
+    os.chdir(vtkPath)
+    times = np.arange(t0,t0+nt*dt,dt)
+
+    for itime,time in enumerate(times):
+        timePath        = os.path.abspath(os.path.join(vtkPath,"{0:.3f}".format(time)))
+        vtkFile         = glob.glob(os.path.join(timePath,'array*U*.vtk'))[0]
+        _vtk2xy_oneFile(vtkFile,verbose=verbose)
+    
+    os.chdir(pathNow)
+    return
+#==============================================================================
+# 
+#==============================================================================
+def _vtk2xy_oneFile(vtkPath, verbose=True):
     """
     Based on a single *.vtk (VTK Structured) file, write out a single *.xy file in the same time directory.
     
@@ -392,7 +500,7 @@ def vtk2xy(vtkPath, verbose=True):
         
     @author: pdoubraw         
     """
-    data, meta      = read_vtkStructured(vtkPath,verbose=False)
+    data, meta      = _read_vtkStructured_oneFile(vtkPath,verbose=False)
     [X,Y,Z,U,V,W]   = data
 
     xq          = np.mean(X[:,0,0]) 
@@ -417,10 +525,21 @@ def vtk2xy(vtkPath, verbose=True):
     
     if verbose:
         print "Converted {0} to {1}".format(vtkPath,oPath)
+    return
+#==============================================================================
+# 
+#==============================================================================
+def vtk2xy(vtkPath, t0=None, dt=None, nt=None, verbose=True):
+    extension = os.path.splitext(vtkPath)[-1]
+    if extension==".vtk":
+        _vtk2xy_oneFile(vtkPath, verbose=verbose)
+    else:
+        _vtk2xy_manyFiles(vtkPath, t0=t0, dt=dt, nt=nt, verbose=verbose)
+    return  
 #==============================================================================
 #         
 #==============================================================================
-def vtk2bts(workingPath,t0,dt,nt,verbose=False,exePath=None):        
+def vtk2bts(workingPath,t0,dt,nt,verbose=False,exePath=None,btsPrefix="prefix"):        
     """
     Given several *.vtk files (within individual time directories), generate a turbsim *.bts file.
     
@@ -443,7 +562,7 @@ def vtk2bts(workingPath,t0,dt,nt,verbose=False,exePath=None):
     """
 
     # a tsConv.inp file is necessary
-    write_inp(t0,dt,nt,workingPath=workingPath)
+    write_inp(t0,dt,nt,workingPath=workingPath,btsPrefix=btsPrefix)
     
     # loop over time, convert vtk=>xy at each time
     for time in np.arange(t0,t0+nt*dt,dt):
@@ -485,3 +604,4 @@ def vtk2bts(workingPath,t0,dt,nt,verbose=False,exePath=None):
     os.system("./of2fast")
     
     os.chdir(oldPath)
+    return
