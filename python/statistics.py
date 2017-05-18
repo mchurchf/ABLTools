@@ -82,6 +82,7 @@ class spatialCorrelations:
         dimsCorrelation[0] = self.componentsCorrelation
         
         self.correlationField = np.zeros(dimsCorrelation)
+        self.autoCorrelation = np.zeros(self.componentsCorrelation)
         self.correlationAccumulatedTime = 0.0
         
         self.x = x
@@ -108,7 +109,7 @@ class spatialCorrelations:
                         self.kNearest = k
                         
         print 'Nearest = (' + str(x[self.iNearest]) + ', ' + str(y[self.jNearest]) + ', ' + str(z[self.kNearest]) + ')'
-        print 'Indes = (' + str(self.iNearest) + ', ' + str(self.jNearest) + ', ' + str(self.kNearest) + ')'
+        print 'Index = (' + str(self.iNearest) + ', ' + str(self.jNearest) + ', ' + str(self.kNearest) + ')'
         
         
     # accumulate the spatial correlation tensor field.    
@@ -116,6 +117,7 @@ class spatialCorrelations:
         # take the current estimate of the variances and multiply by the
         # previous total averaging time
         self.correlationField = self.correlationField * self.correlationAccumulatedTime
+        self.autoCorrelation = self.autoCorrelation * self.correlationAccumulatedTime
         
         # subtract out the given mean field from the new contribution field.
         fluctuationField = fieldUpdate - fieldMean
@@ -127,10 +129,15 @@ class spatialCorrelations:
         for i in range(self.componentsField):
             for j in range(self.componentsField):
                 v = fluctuationField[i,:] * fluctuationField[j,self.iNearest,self.jNearest,self.kNearest]
+                vAuto = fluctuationField[i,self.iNearest,self.jNearest,self.kNearest] * fluctuationField[j,self.iNearest,self.jNearest,self.kNearest]
                 index = (i*self.componentsField) + j
                 self.correlationField[index,:] = self.correlationField[index,:] + (dt * v)
+                self.autoCorrelation[index] = self.autoCorrelation[index] + (dt * vAuto)
                 
         self.correlationField = self.correlationField / self.correlationAccumulatedTime
+        self.autoCorrelation = self.autoCorrelation / self.correlationAccumulatedTime
+    
+    
     
 # I envision a class here to do spatial correlations.  Maybe you give it the 
 # location which is the center point of the correlation.  Like, you give it

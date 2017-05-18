@@ -28,7 +28,7 @@ import numpy as np
 
 
 # Specify the case to analyze.
-case = '../run.neutral.8/array.1'
+case = '../../run.neutral.8/array.1'
 
 # Mean start time.
 meanTimeStart = 10400.0
@@ -37,7 +37,7 @@ meanTimeStart = 10400.0
 varianceTimeStart = 11400.0
 
 # Spatial correlation start time.
-spatialCorrelationTimeStart = 11400.0
+spatialCorrelationTimeStart = 12505.0
 
 # For plotting.
 nLevels = 51;
@@ -137,6 +137,7 @@ for m in range(nTimes):
 print 'Computed statistics with:'
 print '   ' + str(uTimeStatistics.meanAccumulatedTime) + 's of mean accumulation'
 print '   ' + str(uTimeStatistics.varianceAccumulatedTime) + 's of variance accumulation'
+print '   ' + str(uSpatialCorrelations.correlationAccumulatedTime) + 's of correlation accumulation'
 
 
 
@@ -200,7 +201,8 @@ plt.tight_layout()
 # 3 = yx, 4 = yy, 5 = yz
 # 6 = zx, 7 = zy, 8 = zz
 cmpt = 2
-var = uSpatialCorrelations.correlationField[cmpt,:].reshape((dims[2],dims[1]));
+var = uSpatialCorrelations.correlationField[cmpt,:].reshape((dims[2],dims[1]))
+var = var / uSpatialCorrelations.autoCorrelation[cmpt]
 plt.figure(5)
 plt.contourf(y,z,var,nLevels,cmap=default_cmap)
 plt.gca().set_aspect('equal', adjustable='box')
@@ -212,7 +214,8 @@ plt.tight_layout()
 
 
 cmpt = 0
-var = uSpatialCorrelations.correlationField[cmpt,:].reshape((dims[2],dims[1]));
+var = uSpatialCorrelations.correlationField[cmpt,:].reshape((dims[2],dims[1]))
+var = var / uSpatialCorrelations.autoCorrelation[cmpt]
 plt.figure(6)
 plt.contourf(y,z,var,nLevels,cmap=default_cmap)
 plt.gca().set_aspect('equal', adjustable='box')
