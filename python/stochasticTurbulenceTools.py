@@ -262,9 +262,10 @@ class stochasticTurbulence:
         
         filePath = glob.glob(fPath)        
         
-        print "Opening file {0}...".format(filePath[0])
         if len(filePath)==0:
-            raise Exception("Could not find file at {0}.".format(filePath))        
+            raise Exception("Could not find file at {0}.".format(fPath))        
+
+        print "Opening file {0}...".format(filePath[0])
         self.filePath = filePath
         self.fileDir  = pathToBinary
         components = ['u','v','w']
