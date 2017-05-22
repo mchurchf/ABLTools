@@ -6,6 +6,7 @@ Created on Thu May  4 09:59:42 2017
 """
 import numpy as np 
 import os, glob, sys
+from decimal import Decimal
 #==============================================================================
 # 
 #==============================================================================
@@ -478,9 +479,11 @@ def _vtk2xy_manyFiles(vtkPath, t0=None, dt=None, nt=None, verbose=True):
     pathNow = os.path.abspath(os.curdir)
     os.chdir(vtkPath)
     times = np.arange(t0,t0+nt*dt,dt)
+    
+    nDecimals = np.abs((Decimal(str(dt))).as_tuple().exponent)
 
     for itime,time in enumerate(times):
-        timePath        = os.path.abspath(os.path.join(vtkPath,"{0:.3f}".format(time)))
+        timePath        = os.path.abspath(os.path.join(vtkPath,"{0:.{nd}f}".format(time,nd=nDecimals)))
         vtkFile         = glob.glob(os.path.join(timePath,'array*U*.vtk'))[0]
         _vtk2xy_oneFile(vtkFile,verbose=verbose)
     
@@ -561,6 +564,9 @@ def vtk2bts(workingPath,t0,dt,nt,verbose=False,exePath=None,btsPrefix="prefix"):
     @author: pdoubraw        
     """
 
+    # to find the directories
+    nDecimals = np.abs((Decimal(str(dt))).as_tuple().exponent)
+
     # a tsConv.inp file is necessary
     write_inp(t0,dt,nt,workingPath=workingPath,btsPrefix=btsPrefix)
     
@@ -570,7 +576,7 @@ def vtk2bts(workingPath,t0,dt,nt,verbose=False,exePath=None,btsPrefix="prefix"):
         time = int(time) if np.mod(time,int(time))==0 else time  
               
         # the fortran code was hard coded for three decimals
-        timePath = os.path.abspath(os.path.join(workingPath,"{0:.3f}".format(time)))
+        timePath = os.path.abspath(os.path.join(workingPath,"{0:.{nd}f}".format(time,nd=nDecimals)))
 
         # if it doesn't have three decimals, then rename it (else leave it alone)
         if not(os.path.isdir(timePath)):   
