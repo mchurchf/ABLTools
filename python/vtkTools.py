@@ -480,7 +480,8 @@ def _vtk2xy_manyFiles(vtkPath, t0=None, dt=None, nt=None, verbose=True):
     os.chdir(vtkPath)
     times = np.arange(t0,t0+nt*dt,dt)
     
-    nDecimals = np.abs((Decimal(str(dt))).as_tuple().exponent)
+    nDecimals = max ( np.abs((Decimal(str(dt))).as_tuple().exponent), \
+                      np.abs((Decimal(str(t0))).as_tuple().exponent)  )
 
     for itime,time in enumerate(times):
         timePath        = os.path.abspath(os.path.join(vtkPath,"{0:.{nd}f}".format(time,nd=nDecimals)))
@@ -565,7 +566,8 @@ def vtk2bts(workingPath,t0,dt,nt,verbose=False,exePath=None,btsPrefix="prefix"):
     """
 
     # to find the directories
-    nDecimals = np.abs((Decimal(str(dt))).as_tuple().exponent)
+    nDecimals = max ( np.abs((Decimal(str(dt))).as_tuple().exponent), \
+                      np.abs((Decimal(str(t0))).as_tuple().exponent)  )                     
 
     # a tsConv.inp file is necessary
     write_inp(t0,dt,nt,workingPath=workingPath,btsPrefix=btsPrefix)
