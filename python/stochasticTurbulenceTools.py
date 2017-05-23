@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 from pandas import read_csv
 from miscTools import parse
 from spectralTools import smoothSpectrum
+from miscTools import power_law
 
 class stochasticTurbulence:
     
@@ -356,15 +357,25 @@ class stochasticTurbulence:
     def update(self):
         self.U = np.sqrt(self.u**2+self.v**2)
             
-    def scaleU(self,targetMeanU):
+    def scaleU(self,targetU,alpha=None,zRef=99.3):
         """
         Parameters
         ----------
         
-        targetMeanU : float,
+        targetU : float,
             desired mean of 'u' component wind at approximate hub location
+            
+        alpha : float,
+            power law exponent
+            
+        zRef : float,
+            height of targetU
         """
-        offset = targetMeanU - np.mean(self.u[:,self.jHub,self.kHub])            
+        if alpha is not None:
+            u = power_law(self.z,zRef,targetU,alpha)
+        else:
+            u = targetU
+        offset = u - np.mean(self.u[:,self.jHub,self.kHub])            
         self.u = self.u + offset
         self.update()
         
