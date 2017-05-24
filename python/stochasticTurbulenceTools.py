@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 from pandas import read_csv
 from miscTools import parse
 from spectralTools import smoothSpectrum
-from miscTools import power_law
+from metTools import power_law
 
 class stochasticTurbulence:
     
