@@ -124,3 +124,79 @@ def structuredVTK(fileName):
   
   # Return the data.
   return dataSetName, dims, origin, spacing, x, y, z, nFields, fieldName, fieldDim, field
+
+
+
+
+
+
+
+# Read in Ensight format data.  The data is returned as a list called fields that
+# contains numpy arrays.  For example, the Ensight file may contain both pressure
+# and temperature, or velocity and vorticity, so each quantity will be contained
+# in a separate array in the list.  Then for each array, the first index is
+# the number of components, so for scalars, there is only one component, but for
+# vectors there will be three.  The remaining dimensions are the number of 
+# sample points in x, y, and z.
+
+def ensight(fileNameMesh,fileNameField,readFieldOnly,dims):
+  # Import necessary modules
+  import numpy as np
+  
+  
+  # Read in the geometry.
+  if (readFieldOnly == 0):
+      # Open the mesh file
+      f = open(fileNameMesh,'r')
+  
+  
+      # Get the data length.
+      for i in range(8):
+          f.readline()
+      dims = int(f.readline())
+      f.close()
+  
+  
+      # Read in the x,y,z data.
+      data = np.genfromtxt(fileNameMesh,skip_header=9,max_rows=dims*3)
+      x = np.zeros(dims)
+      y = np.zeros(dims)
+      z = np.zeros(dims)
+      x = data[0:dims]
+      y = data[dims:2*dims]
+      z = data[2*dims:3*dims]
+      
+      
+      
+      
+  
+    
+  # Read in the field data.
+  f = open(fileNameField,'r')
+  
+  
+  # Get the data type
+  fieldDim = 0
+  dataType = f.readline().strip('\n')
+  
+  if (dataType == 'scalar'):
+      fieldDim = 1
+  elif (dataType == 'vector'):
+      fieldDim = 3
+  elif (dataType == 'tensor'):
+      fieldDim = 9
+
+  f.close()
+  
+      
+  # Read the field
+  field = np.zeros((dims,fieldDim))
+  data = np.genfromtxt(fileNameField,skip_header=4,max_rows=dims*fieldDim)
+  
+  for i in range(fieldDim):
+      field[0:dims,i] = data[i*dims:(i+1)*dims]
+
+  
+  
+  # Return the data.
+  return dims, x, y, z, fieldDim, field
