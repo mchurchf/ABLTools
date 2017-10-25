@@ -200,3 +200,56 @@ def ensight(fileNameMesh,fileNameField,readFieldOnly,dims):
   
   # Return the data.
   return dims, x, y, z, fieldDim, field
+
+
+
+
+
+
+
+# Read in the planar averaged data output by SOWFA.
+
+def planarAverages(averagingDirectory,varName):
+    # Import necessary modules.
+    import numpy as np
+    import getDataLayout
+
+
+    # Find the time directories.
+    [nTimes,outputTimes] = getDataLayout.getOutputTimes(averagingDirectory)
+    
+    
+    # Read the heights file.
+    z = np.genfromtxt(averagingDirectory + '/' + outputTimes[0] + '/hLevelsCell')
+    
+    
+    # For each time directory, read the data and concatenate.
+    tInt = []
+    dtInt = []
+    dataInt = []
+    t = []
+    dt = []
+    data = []
+    for i in range(nTimes):
+        a = np.genfromtxt(averagingDirectory + '/' + outputTimes[i] + '/' + varName)
+        tInt = a[:,0]
+        dtInt = a[:,1]
+        dataInt = a[:,2:]
+
+        if (i < nTimes-1):
+            tNext = float(outputTimes[i+1])
+            index = np.argmax(np.abs(tInt >= tNext))
+        else:
+            index = len(tInt)
+            
+        if (i == 0):
+            t = tInt[0:index]
+            dt = dtInt[0:index]
+            data = dataInt[0:index,:]
+        else:
+            t = np.concatenate((t,tInt[0:index]),axis=0)
+            dt = np.concatenate((dt,dtInt[0:index]),axis=0)
+            data = np.concatenate((data,dataInt[0:index,:]),axis=0)
+    
+    
+    return z, t, dt, data
