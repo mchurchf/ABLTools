@@ -253,3 +253,219 @@ def planarAverages(averagingDirectory,varName):
     
     
     return z, t, dt, data
+
+
+
+
+
+
+
+# Read in the OpenFOAM probe output data.
+
+def probe(probeDirectory,varName):
+    # Import necessary modules.
+    import numpy as np
+    import getDataLayout
+
+
+    # Find the time directories.
+    [nTimes,outputTimes] = getDataLayout.getOutputTimes(probeDirectory)
+    
+    
+    
+    # For each time directory, read the data and concatenate.
+    tInt = []
+    dataInt = []
+    t = []
+    data = []
+    
+    probePosition = []
+    nProbes = 0
+    for i in range(nTimes):
+        fileName = probeDirectory + '/' + outputTimes[i] + '/' + varName
+        
+        # Handle the file header only if it is the first file in the time
+        # sequence.
+        if (i == 0):
+            f = open(fileName,'r')
+            inHeader = True
+            while (inHeader):
+                a = f.readline().split()
+                firstChar = a[0]
+                probeNum = int(a[2])
+                if ((firstChar == '#') and (probeNum == nProbes)):
+                    inHeader = True
+                    probeX = float(a[3][1:])
+                    probeY = float(a[4])
+                    probeZ = float(a[5][:-1])
+                    probePosition.append(np.zeros(3))
+                    probePosition[nProbes][0] = probeX
+                    probePosition[nProbes][1] = probeY
+                    probePosition[nProbes][2] = probeZ
+                    nProbes = nProbes + 1
+                else:
+                    inHeader = False
+                    f.readline()
+                    
+                
+        # Otherwise, skip through the header.
+        else:
+            f = open(fileName,'r')
+            for j in range(nProbes+2):
+                a = f.readline()
+                
+                
+        # Find out the data type.
+        a = f.readline().split()
+        nComponents = 0
+        dataType = []
+        if (a[1][0] == '('):
+            j = 1
+            while (a[j][-1] != ')'):
+               j = j + 1
+            nComponents = j
+            
+        else:
+            nComponents = 1
+            
+        if (nComponents == 1):
+            dataType = 'scalar'
+        elif (nComponents == 3):
+            dataType = 'vector'
+        elif (nComponents == 6):
+            dataType = 'symmTensor'
+        elif (nComponents == 9):
+            dataType = 'tensor'
+            
+        
+        m = 0
+        while (a != []):
+            tInt.append(float(a[0]))
+            dataInt.append([None]*(nProbes))
+            if (nComponents == 1):
+                for j in range(nProbes):
+                    dataInt[m][j] = float(a[j+1])
+                    
+            else:
+                for j in range(nProbes):
+                    val = np.zeros((nComponents))
+                    for k in range(nComponents):
+                        if (k == 0):
+                            val[k] = float(a[j*nComponents + k + 1][1:])
+                        elif (k==nComponents-1):
+                            val[k] = float(a[j*nComponents + k + 1][:-1])
+                        else:
+                            val[k] = float(a[j*nComponents + k + 1])
+                    
+                    dataInt[m][j] = val
+                           
+            m = m + 1
+            
+            a = f.readline().split()
+            
+                
+        # Close the file.
+        f.close()
+        
+        
+
+        if (i < nTimes-1):
+            tNext = float(outputTimes[i+1])
+            index = np.argmax(np.abs(tInt >= tNext))
+        else:
+            index = len(tInt)
+            
+        if (i == 0):
+            t = tInt[0:index]
+            data = dataInt[0:index]
+        else:
+            t = np.concatenate((t,tInt[0:index]),axis=0)
+            data = np.concatenate((data,dataInt[0:index,:]),axis=0)
+    
+    
+        # Convert lists to numpy arrays
+        t = np.asarray(t)
+        data = np.asarray(data)
+        probePosition = np.asarray(probePosition)
+        
+    return t, data, probePosition, nComponents, nProbes
+
+
+
+
+
+
+
+
+
+
+
+
+# A function to read NetCFD file information.
+
+def ncdump(nc_fid, verb=True):
+    
+    from netCDF4 import Dataset
+    '''
+    ncdump outputs dimensions, variables and their attribute information.
+    The information is similar to that of NCAR's ncdump utility.
+    ncdump requires a valid instance of Dataset.
+
+    Parameters
+    ----------
+    nc_fid : netCDF4.Dataset
+        A netCDF4 dateset object
+    verb : Boolean
+        whether or not nc_attrs, nc_dims, and nc_vars are printed
+
+    Returns
+    -------
+    nc_attrs : list
+        A Python list of the NetCDF file global attributes
+    nc_dims : list
+        A Python list of the NetCDF file dimensions
+    nc_vars : list
+        A Python list of the NetCDF file variables
+    '''
+    def print_ncattr(key):
+        """
+        Prints the NetCDF file attributes for a given key
+
+        Parameters
+        ----------
+        key : unicode
+            a valid netCDF4.Dataset.variables key
+        """
+        try:
+            print "\t\ttype:", repr(nc_fid.variables[key].dtype)
+            for ncattr in nc_fid.variables[key].ncattrs():
+                print '\t\t%s:' % ncattr,\
+                      repr(nc_fid.variables[key].getncattr(ncattr))
+        except KeyError:
+            print "\t\tWARNING: %s does not contain variable attributes" % key
+
+    # NetCDF global attributes
+    nc_attrs = nc_fid.ncattrs()
+    if verb:
+        print "NetCDF Global Attributes:"
+        for nc_attr in nc_attrs:
+            print '\t%s:' % nc_attr, repr(nc_fid.getncattr(nc_attr))
+    nc_dims = [dim for dim in nc_fid.dimensions]  # list of nc dimensions
+    # Dimension shape information.
+    if verb:
+        print "NetCDF dimension information:"
+        for dim in nc_dims:
+            print "\tName:", dim 
+            print "\t\tsize:", len(nc_fid.dimensions[dim])
+            print_ncattr(dim)
+    # Variable information.
+    nc_vars = [var for var in nc_fid.variables]  # list of nc variables
+    if verb:
+        print "NetCDF variable information:"
+        for var in nc_vars:
+            if var not in nc_dims:
+                print '\tName:', var
+                print "\t\tdimensions:", nc_fid.variables[var].dimensions
+                print "\t\tsize:", nc_fid.variables[var].size
+                print_ncattr(var)
+    return nc_attrs, nc_dims, nc_vars
