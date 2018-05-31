@@ -138,7 +138,31 @@ class spatialCorrelations:
         self.autoCorrelation = self.autoCorrelation / self.correlationAccumulatedTime
     
     
+
+
+
+class profileFit:
+    # intitialize the class
+    def __init__(self,z,u):
+        self.z = z
+        self.u = u
+        self.exponentValue = 0
+        self.zFit = []
+        self.uFit = []
     
+        
+    def computePowerLawFit(self,zRef,uRef,zMinFit,zMaxFit):
+        indexFitStart = np.argmax(np.abs(self.z >= zMinFit))
+        indexFitEnd = np.argmax(np.abs(self.z >= zMaxFit)) 
+        self.zFit = self.z[indexFitStart:indexFitEnd]
+        coeffs = np.polyfit(np.log(self.zFit), np.log(self.u[indexFitStart:indexFitEnd]), 1)
+        self.uFit = uRef * np.power((self.zFit/zRef), coeffs[0])
+        self.exponentValue = coeffs[0]
+        
+        
+        
+        
+        
 # I envision a class here to do spatial correlations.  Maybe you give it the 
 # location which is the center point of the correlation.  Like, you give it
 # the center of your data set, and then it loops through all points and does
