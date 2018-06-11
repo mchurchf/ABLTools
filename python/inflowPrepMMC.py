@@ -129,13 +129,18 @@ class inflowPrepMMC:
         # Figure out the header length.
         f = open(fieldFileName,'r')
         lineText = f.readline()
+        if (len(lineText.strip()) > 0):
+            lineText = lineText.strip()
         lineTextPrevious = lineText
         i = 0
-        while ( (lineText[0] != '(') or 
+        while (((lineText[0] != '(')) or
                ((lineText[0] == '(') and (lineTextPrevious[0] == '/'))):
             i = i + 1
             lineTextPrevious = lineText
             lineText = f.readline()
+            if (len(lineText.strip()) > 0):
+                lineText = lineText.strip()
+                
             
         headerLength = i - 1
         f.close()
@@ -145,11 +150,22 @@ class inflowPrepMMC:
         f = open(fieldFileName,'r')
         for i in range(headerLength):
             f.readline()
-            
+        
         self.nPoints = int(f.readline())
         f.readline()
         
         data = f.readline().split()
+        
+        # Remove parentheses
+        if (data[0] == '('):
+            del(data[0])
+        if (data[-1] == ')'):
+            del(data[-1])
+        if (data[0][0] == '('):
+            data[0][0] = data[0][1:]
+        if (data[-1][-1] == ')'):
+            data[-1] = data[-1][:-1]
+        
         nDim = len(data)
 
         field = np.zeros((self.nPoints,nDim))
@@ -157,25 +173,17 @@ class inflowPrepMMC:
         f.close()
         
         
-        # Read in actual data.
+        # Read through the header.
         f = open(fieldFileName,'r')
         for i in range(headerLength+2):
             f.readline()
         
+        # Read in the data stripping out parentheses, if they exist, and
+        # newline characters.
         for i in range(self.nPoints):
-            if (nDim == 1):
-                field[i,0] = float(f.readline())
-            
-            else:
-                data = f.readline().split()
-                for j in range(nDim):
-                    if (j == 0):
-                        field[i,j] = float(data[j][1:])
-                    elif (j == nDim-1):
-                        u = data[nDim-1]
-                        field[i,j] = float(data[j][0:len(u)-1])
-                    else:
-                        field[i,j] = float(data[j])
+            data = f.readline().strip().strip('(').strip(')').split()
+            for j in range(nDim):
+                field[i,j] = float(data[j])
                     
         f.close()
                     
