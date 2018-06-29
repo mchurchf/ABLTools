@@ -274,14 +274,15 @@ def probe(probeDirectory,varName):
     
     
     # For each time directory, read the data and concatenate.
-    tInt = []
-    dataInt = []
     t = []
     data = []
     
     probePosition = []
     nProbes = 0
     for i in range(nTimes):
+        tInt = []
+        dataInt = []
+        
         fileName = probeDirectory + '/' + outputTimes[i] + '/' + varName
         
         # Handle the file header only if it is the first file in the time
@@ -367,26 +368,30 @@ def probe(probeDirectory,varName):
         # Close the file.
         f.close()
         
-        
 
         if (i < nTimes-1):
             tNext = float(outputTimes[i+1])
             index = np.argmax(np.abs(tInt >= tNext))
+            if (index == 0):
+                index = len(tInt)
         else:
             index = len(tInt)
             
+
+        
+        
         if (i == 0):
             t = tInt[0:index]
             data = dataInt[0:index]
         else:
             t = np.concatenate((t,tInt[0:index]),axis=0)
-            data = np.concatenate((data,dataInt[0:index,:]),axis=0)
+            data = np.concatenate((data,dataInt[0:index]),axis=0)
     
     
-        # Convert lists to numpy arrays
-        t = np.asarray(t)
-        data = np.asarray(data)
-        probePosition = np.asarray(probePosition)
+    # Convert lists to numpy arrays
+    t = np.asarray(t)
+    data = np.asarray(data)
+    probePosition = np.asarray(probePosition)
         
     return t, data, probePosition, nComponents, nProbes
 
