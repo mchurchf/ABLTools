@@ -155,8 +155,8 @@ class profileFit:
         indexFitStart = np.argmax(np.abs(self.z >= zMinFit))
         indexFitEnd = np.argmax(np.abs(self.z >= zMaxFit)) 
         self.zFit = self.z[indexFitStart:indexFitEnd]
-        coeffs = np.polyfit(np.log(self.zFit), np.log(self.u[indexFitStart:indexFitEnd]), 1)
-        self.uFit = uRef * np.power((self.zFit/zRef), coeffs[0])
+        coeffs = np.polyfit(np.log(self.zFit/zRef), np.log(self.u[indexFitStart:indexFitEnd]/uRef), 1)
+        self.uFit = uRef * (np.power((self.zFit/zRef), coeffs[0]) + coeffs[1])
         self.exponentValue = coeffs[0]
         
         
