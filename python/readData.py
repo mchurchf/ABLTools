@@ -107,9 +107,9 @@ def structuredVTK(fileName):
       fieldName.append(c[0])
       fieldDim.append(int(c[1]))
       dataArray = np.zeros((fieldDim[m], dims[0], dims[1], dims[2]))
-      for i in range(dims[0]):
+      for k in range(dims[2]):
           for j in range(dims[1]):
-              for k in range(dims[2]):
+              for i in range(dims[0]):
                   l = f.readline()
                   l = l.split()
                   for n in range(fieldDim[m]):
