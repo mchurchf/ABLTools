@@ -160,7 +160,7 @@ for m in range(len(averagingDirectory)):
         R[2,1] = vwMean[m][i]
         R[2,2] = wwMean[m][i]
         
-        Rp = np.matmul(np.matmul(T,R),np.transpose(T))
+        Rp = np.matmul(np.matmul(np.transpose(T),R),T)
         
         uuRMean[m][i] = Rp[0,0]
         uvRMean[m][i] = Rp[0,1]
