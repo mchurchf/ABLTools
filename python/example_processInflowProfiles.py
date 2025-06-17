@@ -1,4 +1,4 @@
-import numpy as np
+cimport numpy as np
 import readData
 from statistics import profileFit
 import matplotlib.pyplot as plt

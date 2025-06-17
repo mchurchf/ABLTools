@@ -17,11 +17,11 @@ import matplotlib.pyplot as plt
 
 
 
-rootDir = '../boundaryData.old'
-boundaries = ['west','lower','east','upper']
+rootDir = '/scratch/joniko/onshore/onshore_10km/postProcessing/boundaryData'
+boundaries = ['east']
 fieldName = 'U'
-pointsFileName = 'points.30'
-time = 900
+pointsFileName = 'points'
+time = 20000
 
 
 

@@ -8,11 +8,11 @@
 
 
 
-case = ['./ABL.neutral.5000x5000x1000m.10m/1_outer.3_corr',
-        './ABL.neutral.5000x5000x1000m.10m/2_outer.1_corr']
+case = ['./zero',
+        './elevated']
 
-tAvgStart = 16000.0
-tAvgEnd = 20000.0
+tAvgStart = 0.0
+tAvgEnd = 1000.0
 
 variables = ['U_mean','V_mean','T_mean']
 varNames = ['U (m/s)','V (m/s)','\theta (K)']
@@ -27,24 +27,10 @@ modulePath = './ABLTools/python'
 
 
 # Import the necessary modules/classes.
-import sys
-pathLength = len(sys.path)
-i = 0
-while (i < pathLength):
-    if (sys.path[i] == modulePath):
-        sys.path.pop(i)
-        pathLength = pathLength - 1
-        
-    i = i + 1
-    
-        
-sys.path.insert(0, modulePath)
-
 import readData
 import writeData
-
+from statistics import profileFit
 import numpy as np
-
 import matplotlib.pyplot as plt
 
 

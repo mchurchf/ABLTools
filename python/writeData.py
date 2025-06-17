@@ -33,18 +33,44 @@ def turbSim(fileName):
     
     
 # Write out structured VTK data.  
-
-def structuredVTK(fileName):
-  # Import necessary modules
+def structuredVTK(fileName,dataName,dims,origin,spacing,fieldDims,fields,fieldNames):
+  # Import necessary modules.
   import numpy as np
   
   
-  # Open the file
+  # Open the file.
   f = open(fileName,'w')
   
-  
-  # To do here...
-  
+
+  # Get the total number of points.
+  nPoints = dims[0] * dims[1] * dims[2]
+  nFields = len(fields)
+    
+  # Write the header.
+  f.write('# vtk DataFile Version 3.0' + '\n')
+  f.write(dataName + '\n')
+  f.write('ASCII' + '\n')
+  f.write('DATASET STRUCTURED_POINTS' + '\n')
+  f.write('DIMENSIONS ' + str(dims[0]) + ' ' + str(dims[1]) + ' ' + str(dims[2]) + '\n')
+  f.write('ORIGIN ' + str(origin[0]) + ' ' + str(origin[1]) + ' ' + str(origin[2]) + '\n')
+  f.write('SPACING ' + str(spacing[0]) + ' ' + str(spacing[1]) + ' ' + str(spacing[2]) + '\n')
+  f.write('POINT_DATA ' + str(nPoints) + '\n')
+  f.write(' FIELD attributes ' + str(nFields) + '\n')
+
+
+  # Write the data.
+  for m in range(nFields):
+      f.write(fieldNames[m] + ' ' + str(fieldDims[m]) + ' ' + str(nPoints) + ' ' + 'float' + '\n')
+      
+      for i in range(nPoints):
+          fieldString = str(fields[m][i,0])
+          for j in range(1,fieldDims[m]):
+              fieldString = fieldString + ' ' + str(fields[m][i,j])
+          fieldString = fieldString + '\n'
+          f.write(fieldString)
+      
+      f.write('\n')
+        
   
   # Close file.
   f.close()  
@@ -57,7 +83,6 @@ def structuredVTK(fileName):
     
     
 # Write out Ensight data.  
-
 def ensight(fileNameMesh,fileNameField,writeFieldOnly,dims,fieldDim,x,y,z,field):
   # Import necessary modules
   import numpy as np

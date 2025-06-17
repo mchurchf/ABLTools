@@ -1,4 +1,4 @@
-# statistics.py
+# statisticsABL.py
 #
 # Matt Churchfield
 # National Renewable Energy Laboratory
@@ -11,6 +11,30 @@
 
 
 import numpy as np
+
+
+
+
+def CartesianToWindRose(u,v):
+    dir = np.arctan2(v,u) * (180.0/np.pi)
+    dir = 270.0 - dir
+    
+    if (len(dir) > 1):
+        for i in range(len(dir)):
+            if (dir[i] > 360.0):
+                dir[i] -= 360.0
+            elif (dir[i] < 0.0):
+                dir[i] += 360.0
+    else:
+        if (dir > 360.0):
+            dir -= 360.0
+        elif (dir < 0.0):
+            dir += 360.0
+        
+     
+    return dir
+
+
 
 
 
@@ -108,8 +132,8 @@ class spatialCorrelations:
                         self.jNearest = j
                         self.kNearest = k
                         
-        print 'Nearest = (' + str(x[self.iNearest]) + ', ' + str(y[self.jNearest]) + ', ' + str(z[self.kNearest]) + ')'
-        print 'Index = (' + str(self.iNearest) + ', ' + str(self.jNearest) + ', ' + str(self.kNearest) + ')'
+        print('Nearest = (' + str(x[self.iNearest]) + ', ' + str(y[self.jNearest]) + ', ' + str(z[self.kNearest]) + ')')
+        print('Index = (' + str(self.iNearest) + ', ' + str(self.jNearest) + ', ' + str(self.kNearest) + ')')
         
         
     # accumulate the spatial correlation tensor field.    
@@ -154,6 +178,7 @@ class profileFit:
     def computePowerLawFit(self,zRef,uRef,zMinFit,zMaxFit):
         indexFitStart = np.argmax(np.abs(self.z >= zMinFit))
         indexFitEnd = np.argmax(np.abs(self.z >= zMaxFit)) 
+        print(indexFitStart,indexFitEnd)
         self.zFit = self.z[indexFitStart:indexFitEnd]
         coeffs = np.polyfit(np.log(self.zFit/zRef), np.log(self.u[indexFitStart:indexFitEnd]/uRef), 1)
         self.uFit = uRef * (np.power((self.zFit/zRef), coeffs[0]) + coeffs[1])
